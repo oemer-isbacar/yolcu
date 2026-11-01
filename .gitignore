@@ -1,0 +1,17 @@
+.gradle/
+.kotlin/
+build/
+app/build/
+local.properties
+.idea/
+*.iml
+
+# Release-Schlüssel – NIE ins Repo
+keystore/
+keystore.properties
+*.jks
+*.keystore
+
+# Fertige APKs gehören ins GitHub-Release, nicht ins Repo
+*.apk
+release/

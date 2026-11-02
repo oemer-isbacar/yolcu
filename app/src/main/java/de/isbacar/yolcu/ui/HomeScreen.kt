@@ -2,6 +2,7 @@ package de.isbacar.yolcu.ui
 
 import android.Manifest
 import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -41,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +60,9 @@ import de.isbacar.yolcu.Prefs
 import de.isbacar.yolcu.ShizukuManager
 import de.isbacar.yolcu.ShizukuManager.State
 import de.isbacar.yolcu.UpdateChecker
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun HomeScreen(padding: PaddingValues, onOpenApps: () -> Unit, onOpenGuide: () -> Unit) {
@@ -75,6 +80,12 @@ fun HomeScreen(padding: PaddingValues, onOpenApps: () -> Unit, onOpenGuide: () -
     val fine = remember(tick) { ctx.granted(Manifest.permission.ACCESS_FINE_LOCATION) }
     val background = remember(tick) { ctx.granted(Manifest.permission.ACCESS_BACKGROUND_LOCATION) }
     val notifications = remember(tick) { ctx.granted(Manifest.permission.POST_NOTIFICATIONS) }
+    val fromStore = remember(tick) {
+        runCatching {
+            ctx.packageManager.getInstallSourceInfo(ctx.packageName).installingPackageName == "com.android.vending"
+        }.getOrDefault(false)
+    }
+    val scope = rememberCoroutineScope()
 
     val locationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { tick++ }
     val singleLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { tick++ }
@@ -113,8 +124,8 @@ fun HomeScreen(padding: PaddingValues, onOpenApps: () -> Unit, onOpenGuide: () -
                 ) { if (!ShizukuManager.requestPermission()) ctx.openShizuku() }
                 State.NOT_RUNNING -> StatusCard(
                     Icons.Rounded.Bolt, "Shizuku starten",
-                    "Nach jedem Neustart des Handys einmal in Shizuku auf „Starten“ tippen (WLAN nötig). " +
-                        "Bis dahin geht nur Spiegeln.", Status.TODO, "Shizuku öffnen",
+                    "Einmal zu Hause im WLAN in Shizuku auf „Starten“ tippen – danach läuft es auch unterwegs " +
+                        "weiter, bis das Handy neu startet.", Status.TODO, "Shizuku öffnen",
                 ) { ctx.openShizuku() }
                 State.NOT_INSTALLED -> StatusCard(
                     Icons.Rounded.Bolt, "Shizuku installieren",
@@ -165,11 +176,42 @@ fun HomeScreen(padding: PaddingValues, onOpenApps: () -> Unit, onOpenGuide: () -
             }
         }
         item {
-            StatusCard(
-                Icons.Rounded.Widgets, "Android Auto vorbereiten",
-                "Einmalig „Unbekannte Quellen“ in den Entwicklereinstellungen von Android Auto einschalten.",
-                Status.HINT, "Anleitung", onOpenGuide,
-            )
+            when {
+                fromStore -> StatusCard(
+                    Icons.Rounded.Widgets, "Für Android Auto sichtbar",
+                    "Falls Yolcu trotzdem fehlt: In Android Auto „Unbekannte Quellen“ prüfen und unter " +
+                        "„Launcher anpassen“ Yolcu anhaken.",
+                    Status.OK, "Anleitung", onOpenGuide,
+                )
+                shizuku == State.READY -> StatusCard(
+                    Icons.Rounded.Widgets, "Für Android Auto sichtbar machen",
+                    "Android Auto zeigt nur Apps aus dem Play Store an. Ein Tipp trägt den Play Store als " +
+                        "Quelle ein – ohne Neuinstallation.",
+                    Status.TODO, "Sichtbar machen",
+                ) {
+                    scope.launch {
+                        val svc = ShizukuManager.service()
+                        val result = if (svc == null) null else withContext(Dispatchers.IO) {
+                            runCatching { svc.setInstaller(ctx.packageName, ctx.applicationInfo.sourceDir) }
+                                .getOrElse { it.message ?: "Fehler" }
+                        }
+                        val msg = when (result) {
+                            null -> "Shizuku läuft nicht – erst starten."
+                            "OK" -> "Erledigt! Handy einmal neu mit dem Auto verbinden."
+                            "REINSTALL" -> "Yolcu wird neu eingerichtet und schließt sich kurz."
+                            else -> result
+                        }
+                        Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
+                        tick++
+                    }
+                }
+                else -> StatusCard(
+                    Icons.Rounded.Widgets, "Für Android Auto sichtbar machen",
+                    "Android Auto zeigt nur Apps aus dem Play Store an. Starte zuerst Shizuku (zu Hause im WLAN), " +
+                        "dann erscheint hier der Knopf dafür.",
+                    Status.TODO, "Anleitung", onOpenGuide,
+                )
+            }
         }
 
         item { SectionHeader("Fahrt") }

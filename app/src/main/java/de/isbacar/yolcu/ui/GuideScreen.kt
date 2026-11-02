@@ -53,8 +53,8 @@ private val steps = listOf(
         "Shizuku starten",
         "Einmalig Entwickleroptionen aktivieren: Einstellungen → Telefoninfo → Softwareinformationen → " +
             "7× auf „Buildnummer“ tippen. Dann in Shizuku „Über kabelloses Debugging starten“ wählen und " +
-            "der Kopplung folgen.\n\nNach jedem Neustart des Handys in Shizuku erneut auf „Starten“ tippen " +
-            "(dafür muss das Handy in einem WLAN sein, z. B. zu Hause).",
+            "der Kopplung folgen.\n\nWLAN ist nur zum Starten nötig – danach läuft Shizuku auch unterwegs " +
+            "weiter, bis das Handy neu startet. Also einfach zu Hause starten.",
         "Shizuku öffnen",
     ) { it.openShizuku() },
     Step(
@@ -74,8 +74,8 @@ private val steps = listOf(
         "Los geht’s im Auto",
         "Handy verbinden, im Android-Auto-Menü Yolcu öffnen und eine App antippen. " +
             "Oben rechts: ← Zurück, ▦ andere App, ✕ schließen.\n\n" +
-            "Taucht Yolcu nicht auf: In den Einstellungen „Alle Android-Auto-Versionen zulassen“ einschalten " +
-            "oder Yolcu mit KingInstaller (Shizuku-Modus) neu installieren.",
+            "Taucht Yolcu nicht auf: Auf der Startseite „Für Android Auto sichtbar machen“ tippen, Handy neu " +
+            "verbinden und in Android Auto unter „Launcher anpassen“ prüfen, ob Yolcu angehakt ist.",
     ),
 )
 

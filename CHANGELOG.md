@@ -1,5 +1,10 @@
 # Änderungen
 
+## 1.1
+
+- Neu: „Für Android Auto sichtbar machen“ – trägt per Shizuku den Play Store als Installationsquelle ein, damit Android Auto Yolcu anzeigt (ersetzt KingInstaller).
+- Anleitung: WLAN wird nur zum Starten von Shizuku gebraucht, danach läuft es auch unterwegs.
+
 ## 1.0
 
 - Erste Version.

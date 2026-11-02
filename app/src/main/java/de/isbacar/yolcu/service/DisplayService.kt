@@ -93,6 +93,27 @@ class DisplayService() : IDisplayService.Stub() {
         InputInjector.key(displayId, keyCode)
     }
 
+    override fun setInstaller(packageName: String, apkPath: String): String {
+        fun installer() = InputInjector.exec("pm", "list", "packages", "-i", packageName)
+            .lineSequence().firstOrNull { it.startsWith("package:$packageName ") || it.trim() == "package:$packageName" }
+            ?.substringAfter("installer=", "")?.trim().orEmpty()
+
+        if (installer() == PLAY_STORE) return "OK"
+        val out = InputInjector.exec("pm", "set-installer", packageName, PLAY_STORE)
+        if (installer() == PLAY_STORE) return "OK"
+
+        // Ältere Systeme kennen set-installer nicht: dann über sich selbst neu installieren.
+        // Die App wird dabei kurz beendet, Einstellungen bleiben erhalten.
+        val tmp = "/data/local/tmp/yolcu-reinstall.apk"
+        val copy = InputInjector.exec("cp", apkPath, tmp)
+        if (copy.isNotBlank()) return "Kopieren fehlgeschlagen: ${copy.trim()} / ${out.trim()}"
+        InputInjector.exec(
+            "sh", "-c",
+            "nohup sh -c 'sleep 1; pm install -r -i $PLAY_STORE $tmp; rm -f $tmp' >/dev/null 2>&1 &",
+        )
+        return "REINSTALL"
+    }
+
     private fun displayManager(): DisplayManager {
         val ctx = FakeContext(base ?: systemContext())
         val ctor = DisplayManager::class.java.getDeclaredConstructor(Context::class.java)
@@ -119,6 +140,8 @@ class DisplayService() : IDisplayService.Stub() {
     }
 
     private companion object {
+        const val PLAY_STORE = "com.android.vending"
+
         // Werte aus android.hardware.display.DisplayManager (teils versteckt)
         const val PUBLIC = 1
         const val PRESENTATION = 1 shl 1

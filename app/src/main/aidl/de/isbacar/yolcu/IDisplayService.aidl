@@ -15,4 +15,7 @@ interface IDisplayService {
     void key(int displayId, int keyCode) = 6;
     String lastError() = 7;
     int myUid() = 8;
+
+    // Trägt den Play Store als Installationsquelle ein, damit Android Auto die App anzeigt.
+    String setInstaller(String packageName, String apkPath) = 9;
 }
